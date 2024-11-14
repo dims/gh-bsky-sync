@@ -134,7 +134,6 @@ def main():
 
     response = parse_json_from_bytes(agent.app.bsky.graph.get_list(list_uri))
     existing_members = response["items"]
-    print(existing_members)
 
     for member in sorted(all_members):
         bsky_id = get_bluesky_account(agent, member)
