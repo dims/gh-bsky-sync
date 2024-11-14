@@ -106,8 +106,11 @@ def main():
 
     # Find and parse all org.yaml files
     all_members = find_and_parse_org_yaml(root_directory)
+
     bsky_id = os.environ.get('BSKY_ID')
     bsky_password = os.environ.get('BSKY_PASSWORD')
+    if not bsky_id or not bsky_password:
+        raise ValueError("BSKY_ID/BSKY_PASSWORD environment variables should be set")
 
     agent = chitose.BskyAgent(service='https://bsky.social')
     agent.login(identifier=bsky_id, password=bsky_password)
