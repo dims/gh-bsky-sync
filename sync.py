@@ -1,13 +1,22 @@
-import os
-import yaml
-import pathlib
-import requests
-import time
-import chitose
+import argparse
 import json
+import os
+import pathlib
+import time
 from datetime import datetime
 from datetime import timezone
 
+import chitose
+import requests
+import yaml
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-f",
+    "--follow",
+    action="store_true",
+)
+args = parser.parse_args()
 
 def extract_members(data):
     members = set()
@@ -138,6 +147,9 @@ def main():
     for member in sorted(all_members):
         bsky_id = get_bluesky_account(agent, member)
         if bsky_id:
+            if args.follow:
+                agent.follow(bsky_id)
+                print(f"following {member} = {bsky_id}")
             found = False
             for item in existing_members:
                 if item["subject"]["did"] == bsky_id:
