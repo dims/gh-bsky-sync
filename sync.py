@@ -112,7 +112,7 @@ def main():
     actor_did = response["did"]
     print(handle + " = " + actor_did)
 
-    list_name = "test"
+    list_name = "Kubernetes Community/GitHub org members"
     list_uri = ""
     response = parse_json_from_bytes(agent.app.bsky.graph.get_lists(handle))
     for list in response["lists"]:
