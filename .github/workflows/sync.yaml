@@ -23,4 +23,8 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run sync script
+      env:
+        BSKY_ID: ${{ secrets.BSKY_ID }}
+        BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: python sync.py
