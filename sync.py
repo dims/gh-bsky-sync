@@ -28,20 +28,26 @@ def extract_members(data):
 def find_and_parse_org_yaml(root_dir):
     all_members = set()
 
-    for root, dirs, files in os.walk(root_dir):
-        if 'org.yaml' in files:
-            yaml_file_path = os.path.join(root, 'org.yaml')
-            print(f"Processing: {yaml_file_path}")
-
-            try:
-                with open(yaml_file_path, 'r') as file:
-                    parsed_data = yaml.safe_load(file)
-                    members = extract_members(parsed_data)
-                    all_members.update(members)
-            except yaml.YAMLError as e:
-                print(f"Error parsing YAML file {yaml_file_path}: {e}")
-            except IOError as e:
-                print(f"Error reading file {yaml_file_path}: {e}")
+    urls = [
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/kubernetes-sigs/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/onfig/kubernetes-incubator/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/kubernetes-retired/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/etcd-io/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/org/config/kubernetes-nightly/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/kubernetes-client/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/kubernetes-csi/org.yaml",
+        "https://raw.githubusercontent.com/kubernetes/org/refs/heads/main/config/kubernetes/org.yaml"
+    ]
+    for url in urls:
+        print(f"Processing: {url}")
+        try:
+            parsed_data = yaml.safe_load(requests.get(url).text)
+            members = extract_members(parsed_data)
+            all_members.update(members)
+        except yaml.YAMLError as e:
+            print(f"Error parsing YAML file {url}: {e}")
+        except IOError as e:
+            print(f"Error reading file {url}: {e}")
 
     return all_members
 
@@ -100,7 +106,6 @@ def main():
 
     # Find and parse all org.yaml files
     all_members = find_and_parse_org_yaml(root_directory)
-
     bsky_id = os.environ.get('BSKY_ID')
     bsky_password = os.environ.get('BSKY_PASSWORD')
 
@@ -123,21 +128,34 @@ def main():
     # Print the results
     print(f"\nTotal number of unique members across all org.yaml files: {len(all_members)}")
     print("All members:")
+
+    response = parse_json_from_bytes(agent.app.bsky.graph.get_list(list_uri))
+    existing_members = response["items"]
+    print(existing_members)
+
     for member in sorted(all_members):
         bsky_id = get_bluesky_account(agent, member)
         if bsky_id:
-            print(member + " = " + bsky_id)
-            record = {
-                '$type': 'app.bsky.graph.listitem',
-                'subject': bsky_id,
-                'list': list_uri,
-                'createdAt': datetime.now(timezone.utc).isoformat(),
-            }
-            agent.com.atproto.repo.create_record(
-                repo=actor_did,
-                collection='app.bsky.graph.listitem',
-                record=record
-            )
+            found = False
+            for item in existing_members:
+                if item["subject"]["did"] == bsky_id:
+                    found = True
+                    break
+            if found:
+                print("Skipping already added : " + member + " = " + bsky_id)
+            else:
+                print("Added : " + member + " = " + bsky_id)
+                record = {
+                    '$type': 'app.bsky.graph.listitem',
+                    'subject': bsky_id,
+                    'list': list_uri,
+                    'createdAt': datetime.now(timezone.utc).isoformat(),
+                }
+                agent.com.atproto.repo.create_record(
+                    repo=actor_did,
+                    collection='app.bsky.graph.listitem',
+                    record=record
+                )
         time.sleep(.1)
 
 
