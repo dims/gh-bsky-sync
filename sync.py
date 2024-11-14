@@ -14,7 +14,7 @@ def extract_members(data):
 
     if isinstance(data, dict):
         for key, value in data.items():
-            if key == 'members':
+            if key == 'members' or key == 'admins':
                 members.update(value)
             elif isinstance(value, (dict, list)):
                 members.update(extract_members(value))
