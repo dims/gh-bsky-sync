@@ -144,9 +144,9 @@ def main():
                     found = True
                     break
             if found:
-                print("Skipping already added : " + member + " = " + bsky_id)
+                print("Skipping already present : " + member + " = " + bsky_id)
             else:
-                print("Added : " + member + " = " + bsky_id)
+                print("Adding : " + member + " = " + bsky_id)
                 record = {
                     '$type': 'app.bsky.graph.listitem',
                     'subject': bsky_id,
