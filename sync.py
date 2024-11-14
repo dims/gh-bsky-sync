@@ -52,12 +52,12 @@ def find_and_parse_org_yaml(root_dir):
     return all_members
 
 
-github_token = os.environ.get('GITHUB_TOKEN')
+github_token = os.environ.get('GH_TOKEN')
 
 
 def get_bluesky_account(agent, username):
     if not github_token:
-        raise ValueError("GITHUB_TOKEN environment variable is not set")
+        raise ValueError("GH_TOKEN environment variable is not set")
 
     url = f"https://api.github.com/users/{username}/social_accounts"
     headers = {
