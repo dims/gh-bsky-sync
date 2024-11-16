@@ -23,15 +23,7 @@ def parse_json_from_bytes(json_bytes):
         return None
 
 
-def main():
-    bsky_id = os.environ.get('BSKY_ID')
-    bsky_password = os.environ.get('BSKY_PASSWORD')
-    if not bsky_id or not bsky_password:
-        raise ValueError("BSKY_ID/BSKY_PASSWORD environment variables should be set")
-
-    agent = chitose.BskyAgent(service='https://bsky.social')
-    agent.login(identifier=bsky_id, password=bsky_password)
-
+def unfollow(agent, bsky_id):
     cursor = ""
     followings = []
     while True:
@@ -42,7 +34,6 @@ def main():
         if "cursor" not in response:
             break
         cursor = response["cursor"]
-
     for following in followings:
         if "following" not in following["viewer"]:
             continue
@@ -54,7 +45,7 @@ def main():
                 response["profiles"][0]["postsCount"] < 5 or
                 response["profiles"][0]["followersCount"] < 5 or
                 response["profiles"][0]["followsCount"] < 5):
-            print(f"Unfollowing {following["handle"]} using repo {repo} and key {rkey}")
+            print(f"Unfollowing {following['handle']} using repo {repo} and key {rkey}")
             try:
                 response = parse_json_from_bytes(agent.com.atproto.repo.delete_record(
                     collection='app.bsky.graph.follow',
@@ -71,6 +62,18 @@ def main():
                 print("snoozing....")
                 time.sleep(5)
             time.sleep(0.1)
+
+
+def main():
+    bsky_id = os.environ.get('BSKY_ID')
+    bsky_password = os.environ.get('BSKY_PASSWORD')
+    if not bsky_id or not bsky_password:
+        raise ValueError("BSKY_ID/BSKY_PASSWORD environment variables should be set")
+
+    agent = chitose.BskyAgent(service='https://bsky.social')
+    agent.login(identifier=bsky_id, password=bsky_password)
+
+    unfollow(agent, bsky_id)
 
 
 main()
