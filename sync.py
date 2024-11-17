@@ -9,6 +9,7 @@ from datetime import timezone
 import chitose
 import requests
 import yaml
+from chitose.app.bsky.feed.post import Post
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -17,6 +18,7 @@ parser.add_argument(
     action="store_true",
 )
 args = parser.parse_args()
+
 
 def extract_members(data):
     members = set()
@@ -84,12 +86,12 @@ def get_bluesky_account(agent, username):
                 actor = account['url'].split('/')[-1]
                 response = parse_json_from_bytes(agent.app.bsky.actor.get_profiles(actors=actor))
                 for profile in response["profiles"]:
-                    return profile["did"]
+                    return profile["handle"], profile["did"]
     elif response.status_code == 404:
-        return None
+        return None, None
     else:
         print(f"Error for user {username}: {response.status_code}")
-        return None
+    return None, None
 
 
 def parse_json_from_bytes(json_bytes):
@@ -142,25 +144,27 @@ def main():
     print("All members:")
 
     existing_members = get_existing_members(agent, list_uri)
+    map_handle_did = {}
 
     for member in sorted(all_members):
-        bsky_id = get_bluesky_account(agent, member)
-        if bsky_id:
+        bsky_handle, bsky_did = get_bluesky_account(agent, member)
+        if bsky_handle and bsky_did:
             if args.follow:
-                agent.follow(bsky_id)
-                print(f"following {member} = {bsky_id}")
+                agent.follow(bsky_did)
+                print(f"following {member} / {bsky_handle} = {bsky_did}")
             found = False
             for item in existing_members:
-                if item["subject"]["did"] == bsky_id:
+                if item["subject"]["did"] == bsky_did:
                     found = True
                     break
             if found:
-                print("Skipping already present : " + member + " = " + bsky_id)
+                print(f"Skipping already present : {member}  / {bsky_handle} = {bsky_did}")
             else:
-                print("Adding : " + member + " = " + bsky_id)
+                print(f"Adding : {member}  / {bsky_handle} = {bsky_did}")
+                map_handle_did[bsky_handle] = bsky_did
                 record = {
                     '$type': 'app.bsky.graph.listitem',
-                    'subject': bsky_id,
+                    'subject': bsky_did,
                     'list': list_uri,
                     'createdAt': datetime.now(timezone.utc).isoformat(),
                 }
@@ -170,6 +174,91 @@ def main():
                     record=record
                 )
         time.sleep(.1)
+
+    if len(map_handle_did) > 0:
+        post_message(agent, map_handle_did)
+
+
+def find_byte_array(haystack: bytes, needle: bytes) -> tuple[int, int]:
+    start = haystack.find(needle)
+    if start != -1:
+        end = start + len(needle)
+        return start, end
+    return -1, -1
+
+
+def get_index(haystack, needle):
+    start, end = find_byte_array(bytes(haystack, "utf-8"), bytes(needle, "utf-8"))
+    return {
+        'byteEnd': end, 'byteStart': start
+    }
+
+
+def post_message(agent, map_handle_did):
+    embed = {
+        '$type': 'app.bsky.embed.record',
+        'record':
+            {
+                'cid': 'bafyreidsidmzftmp3g736d3zargqrvoibhy7dlgkpnkileyuqm7wd7ge7m',
+                'uri': 'at://did:plc:kfztyuziv2i44b5kpecth77y/app.bsky.graph.list/3lau2wjkn3g2s'
+            }
+    }
+
+    text = "Hi! "
+    for key, value in map_handle_did.items():
+        text += f"@{key} "
+    text += " - added you to go.k8s.io/bsky (list for k8s GitHub org members)."
+    text += "\n\n@kubernetes.dev #kubernetes"
+
+    facets = [
+        {
+            'features': [
+                {
+                    '$type': 'app.bsky.richtext.facet#link',
+                    'uri': 'https://bsky.app/profile/did:plc:kfztyuziv2i44b5kpecth77y/lists/3lau2wjkn3g2s'
+                }
+            ],
+            'index': get_index(text, "go.k8s.io/bsky")
+        },
+        {
+            'features': [
+                {
+                    '$type': 'app.bsky.richtext.facet#tag', 'tag': 'kubernetes'
+                }
+            ],
+            'index': get_index(text, "#kubernetes")
+        },
+        {
+            '$type': 'app.bsky.richtext.facet',
+            'features': [
+                {
+                    '$type': 'app.bsky.richtext.facet#mention',
+                    'did': 'did:plc:v6ps63hssmxoznrgwbyxmqcx'
+                }
+            ],
+            'index': get_index(text, "@kubernetes.dev")
+        },
+    ]
+
+    for key, value in map_handle_did.items():
+        facets += [{
+            '$type': 'app.bsky.richtext.facet',
+            'features': [
+                {
+                    '$type': 'app.bsky.richtext.facet#mention',
+                    'did': f'{value}'
+                }
+            ],
+            'index': get_index(text, f"@{key}")
+        }]
+
+    record = Post(text=text,
+                  embed=embed,
+                  facets=facets,
+                  created_at=datetime.now(timezone.utc).isoformat())
+    agent.com.atproto.repo.create_record(
+        repo=agent.session['did'], collection='app.bsky.feed.post', record=record)
+    print(f"Posted message : {text}")
 
 
 def get_existing_members(agent, list_uri):
