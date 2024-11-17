@@ -141,8 +141,7 @@ def main():
     print(f"\nTotal number of unique members across all org.yaml files: {len(all_members)}")
     print("All members:")
 
-    response = parse_json_from_bytes(agent.app.bsky.graph.get_list(list_uri))
-    existing_members = response["items"]
+    existing_members = get_existing_members(agent, list_uri)
 
     for member in sorted(all_members):
         bsky_id = get_bluesky_account(agent, member)
@@ -171,6 +170,21 @@ def main():
                     record=record
                 )
         time.sleep(.1)
+
+
+def get_existing_members(agent, list_uri):
+    cursor = ""
+    members = []
+    while True:
+        response = parse_json_from_bytes(agent.app.bsky.graph.get_list(list_uri, cursor=cursor))
+        if len(response["items"]) == 0:
+            break
+        members.extend(response["items"])
+        if "cursor" not in response:
+            break
+        cursor = response["cursor"]
+
+    return members
 
 
 main()
