@@ -151,12 +151,18 @@ def main():
     existing_members = get_existing_members(agent, list_uri)
     map_handle_did = {}
 
+    existing_followings = get_followings(agent, bsky_id)
+
     for member in sorted(all_members):
         bsky_handle, bsky_did = get_bluesky_account(agent, member)
         if bsky_handle and bsky_did:
             if args.follow:
-                agent.follow(bsky_did)
-                print(f"following {member} / {bsky_handle} = {bsky_did}")
+                is_following = any(follow["did"] == bsky_did or follow["handle"] == bsky_handle for follow in existing_followings)
+                if not is_following:
+                    agent.follow(bsky_did)
+                    print(f"following {member} / {bsky_handle} = {bsky_did}")
+                else:
+                    print(f"Skipping already following : {member}  / {bsky_handle} = {bsky_did}")
             if not args.skip_list:
                 found = False
                 for item in existing_members:
@@ -183,6 +189,20 @@ def main():
 
     if len(map_handle_did) > 0:
         post_message(agent, map_handle_did)
+
+
+def get_followings(agent, bsky_id):
+    cursor = ""
+    existing_followings = []
+    while True:
+        response = parse_json_from_bytes(agent.app.bsky.graph.get_follows(actor=bsky_id, cursor=cursor))
+        if len(response["follows"]) == 0:
+            break
+        existing_followings.extend(response["follows"])
+        if "cursor" not in response:
+            break
+        cursor = response["cursor"]
+    return existing_followings
 
 
 def find_byte_array(haystack: bytes, needle: bytes) -> tuple[int, int]:
