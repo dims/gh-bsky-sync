@@ -17,6 +17,11 @@ parser.add_argument(
     "--follow",
     action="store_true",
 )
+parser.add_argument(
+    "-s",
+    "--skip-list",
+    action="store_true",
+)
 args = parser.parse_args()
 
 
@@ -152,27 +157,28 @@ def main():
             if args.follow:
                 agent.follow(bsky_did)
                 print(f"following {member} / {bsky_handle} = {bsky_did}")
-            found = False
-            for item in existing_members:
-                if item["subject"]["did"] == bsky_did:
-                    found = True
-                    break
-            if found:
-                print(f"Skipping already present : {member}  / {bsky_handle} = {bsky_did}")
-            else:
-                print(f"Adding : {member}  / {bsky_handle} = {bsky_did}")
-                map_handle_did[bsky_handle] = bsky_did
-                record = {
-                    '$type': 'app.bsky.graph.listitem',
-                    'subject': bsky_did,
-                    'list': list_uri,
-                    'createdAt': datetime.now(timezone.utc).isoformat(),
-                }
-                agent.com.atproto.repo.create_record(
-                    repo=actor_did,
-                    collection='app.bsky.graph.listitem',
-                    record=record
-                )
+            if not args.skip_list:
+                found = False
+                for item in existing_members:
+                    if item["subject"]["did"] == bsky_did:
+                        found = True
+                        break
+                if found:
+                    print(f"Skipping already present : {member}  / {bsky_handle} = {bsky_did}")
+                else:
+                    print(f"Adding : {member}  / {bsky_handle} = {bsky_did}")
+                    map_handle_did[bsky_handle] = bsky_did
+                    record = {
+                        '$type': 'app.bsky.graph.listitem',
+                        'subject': bsky_did,
+                        'list': list_uri,
+                        'createdAt': datetime.now(timezone.utc).isoformat(),
+                    }
+                    agent.com.atproto.repo.create_record(
+                        repo=actor_did,
+                        collection='app.bsky.graph.listitem',
+                        record=record
+                    )
         time.sleep(.1)
 
     if len(map_handle_did) > 0:
