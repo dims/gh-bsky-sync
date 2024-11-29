@@ -1,11 +1,14 @@
+import io
 import os
-from atproto import Client, client_utils
-import feedparser
-import json
 import re
+import traceback
+
+import feedparser
 import requests
+from PIL import Image
+from atproto import Client
+from atproto_client.exceptions import BadRequestError
 from atproto_client.utils import TextBuilder
-import requests
 
 
 def get_profile_feed(client, bsky_id):
@@ -45,12 +48,7 @@ def get_mate_in_2_posts():
     return response.entries
 
 def post_item(client, post_id, image_id, text):
-    image_url = f"https://pbs.twimg.com/media/{image_id}?format=png&name=900x900"
-    image_response = requests.get(image_url)
-    if image_response.status_code == 200:
-        image_data = image_response.content
-    else:
-        raise Exception(f"Failed to fetch image from {image_url}")
+    image_data = get_image(image_id)
     tb = TextBuilder()
     tb.text('mate in 2 puzzle from ')
     tb.link(f"@ImShahinyan",
@@ -68,6 +66,18 @@ def post_item(client, post_id, image_id, text):
     # Print the URI of the created post
     print(f"Post created with URI: {response.uri}")
     return response.uri
+
+
+def get_image(image_id):
+    image_url = f"https://pbs.twimg.com/media/{image_id}?format=png&name=900x900"
+    image_response = requests.get(image_url)
+    if image_response.status_code == 200:
+        image = Image.open(io.BytesIO(image_response.content))
+        output = io.BytesIO()
+        image.save(output, format='PNG', optimize=True, compress_level=9)
+        return output.getvalue()
+    else:
+        raise Exception(f"Failed to fetch image from {image_url}")
 
 def main():
     bsky_id = os.environ.get('BSKY_ID')
@@ -109,8 +119,12 @@ def main():
                 break
 
         if not found:
-            uri = post_item(client, post_id, image_id, entry.title)
-            print(f"posted {entry.id} as {uri}")
+            try:
+                uri = post_item(client, post_id, image_id, entry.title)
+                print(f"posted {entry.id} as {uri}")
+            except BadRequestError:
+                print(traceback.format_exc())
+                print(f"unable to post {entry.id}")
         else:
             print(f"skipping {entry.id} already present")
 
