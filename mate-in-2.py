@@ -45,6 +45,7 @@ def get_mate_in_2_posts():
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         },
     )
+    print(response)
     return response.entries
 
 def post_item(client, post_id, image_id, text):
@@ -90,8 +91,11 @@ def main():
     print('Welcome,', profile.display_name)
 
     profile_feed_items = get_profile_feed(client, bsky_id)
+    print(f"found {len(profile_feed_items)} posts in bsky profile feed")
 
-    for entry in get_mate_in_2_posts():
+    posts = get_mate_in_2_posts()
+    print(f"found {len(posts)} posts in rss feed")
+    for entry in posts:
         pattern = r'mate(s)? in 2'
         match = re.search(pattern, entry.title, re.IGNORECASE)
         if not match:
