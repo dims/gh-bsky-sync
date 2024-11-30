@@ -1,4 +1,4 @@
-name: Run Sync Script
+name: Run mate-in-2 Script
 
 on:
   schedule:
