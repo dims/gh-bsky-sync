@@ -32,7 +32,6 @@ def get_mate_in_2_posts():
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         },
     )
-    print(response)
     return response.entries
 
 def post_item(client, post_id, image_id, text):
