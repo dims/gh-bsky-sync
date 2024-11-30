@@ -1,3 +1,6 @@
 chitose>=0.0.11
 PyYAML>=6.0.2
 Requests>=2.32.3
+feedparser>=6.0.11
+pillow>=11.0.0
+atproto>=0.0.55
