@@ -24,15 +24,25 @@ def get_profile_feed(client, bsky_id):
     return profile_feed_items
 
 def get_mate_in_2_posts():
-    response = feedparser.parse(
+    urls = [
         'https://nitter.privacydev.net/ImShahinyan/rss',
-        request_headers={
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'accept-language': 'en-US,en;q=0.9,it;q=0.8',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-        },
-    )
-    return response.entries
+        'https://nitter.poast.org/ImShahinyan/rss'
+    ]
+    entries = []
+    for url in urls:
+        response = feedparser.parse(
+            url,
+            request_headers={
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'en-US,en;q=0.9,it;q=0.8',
+                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+            },
+        )
+        if response['status'] == 200:
+            entries = entries + response.entries
+        else:
+            print(f"bad http response {response['status']} from {url}")
+    return list({v['id'].split('/')[-1]: v for v in entries}.values())
 
 def post_item(client, post_id, image_id, text):
     image_data = get_image(image_id)
