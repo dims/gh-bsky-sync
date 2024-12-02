@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import time
 import traceback
 
 import feedparser
@@ -26,7 +27,9 @@ def get_profile_feed(client, bsky_id):
 def get_mate_in_2_posts():
     urls = [
         'https://nitter.privacydev.net/ImShahinyan/rss',
-        'https://nitter.poast.org/ImShahinyan/rss'
+        'https://nitter.privacydev.net/search/rss?f=tweets&q=%22mate+in+2%22'
+        'https://nitter.poast.org/ImShahinyan/rss',
+        'https://nitter.poast.org/search/rss?f=tweets&q=%22mate+in+2%22'
     ]
     entries = []
     for url in urls:
@@ -42,14 +45,15 @@ def get_mate_in_2_posts():
             entries = entries + response.entries
         else:
             print(f"bad http response {response['status']} from {url}")
+        time.sleep(1)
     return list({v['id'].split('/')[-1]: v for v in entries}.values())
 
-def post_item(client, post_id, image_id, text):
+def post_item(client, author, post_id, image_id, text):
     image_data = get_image(image_id)
     tb = TextBuilder()
     tb.text('mate in 2 puzzle from ')
-    tb.link(f"@ImShahinyan",
-            f"https://x.com/ImShahinyan/status/{post_id}")
+    tb.link(f"@{author}",
+            f"https://x.com/{author}/status/{post_id}")
     tb.text(':\n')
     tb.text('"')
     tb.text(text)
@@ -102,15 +106,17 @@ def main():
         match = re.search(id_pattern, entry.id)
         if match:
             post_id = match.group(1)
+        else:
+            print(f"skipping {entry.id} unable to fetch status")
+            continue
 
-        image_id = None
         image_pattern = r'media%2F([^.]+)\.'
         match = re.search(image_pattern, entry.summary)
         if match:
             image_id = match.group(1)
-
-        if not post_id or not image_id:
-            print(f"skipping {entry.id} unable to parse")
+        else:
+            print(f"skipping {entry.id} unable to fetch image")
+            continue
 
         found = False
         for item in profile_feed_items:
@@ -120,7 +126,7 @@ def main():
 
         if not found:
             try:
-                uri = post_item(client, post_id, image_id, entry.title)
+                uri = post_item(client, entry.author.lstrip('@'), post_id, image_id, entry.title)
                 print(f"posted {entry.id} as {uri}")
             except BadRequestError:
                 print(traceback.format_exc())
