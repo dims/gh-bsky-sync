@@ -27,9 +27,9 @@ def get_profile_feed(client, bsky_id):
 def get_mate_in_2_posts():
     urls = [
         'https://nitter.privacydev.net/ImShahinyan/rss',
-        'https://nitter.privacydev.net/search/rss?f=tweets&q=%22mate+in+2%22'
+        # 'https://nitter.privacydev.net/search/rss?f=tweets&q=%22mate+in+2%22'
         'https://nitter.poast.org/ImShahinyan/rss',
-        'https://nitter.poast.org/search/rss?f=tweets&q=%22mate+in+2%22'
+        # 'https://nitter.poast.org/search/rss?f=tweets&q=%22mate+in+2%22'
     ]
     entries = []
     for url in urls:
