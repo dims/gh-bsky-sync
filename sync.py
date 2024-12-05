@@ -189,7 +189,7 @@ def main():
                         )
                     except urllib.error.HTTPError as err:
                         print(f">>>> HTTPError - Unable to add {member}: {err.msg}")
-        time.sleep(.1)
+        time.sleep(1)
 
     if len(map_handle_did) > 0:
         post_message(agent, map_handle_did)
