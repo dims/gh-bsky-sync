@@ -26,10 +26,10 @@ def get_profile_feed(client, bsky_id):
 
 def get_mate_in_2_posts():
     urls = [
-        'https://nitter.privacydev.net/ImShahinyan/rss',
-        # 'https://nitter.privacydev.net/search/rss?f=tweets&q=%22mate+in+2%22'
+        #'https://nitter.privacydev.net/ImShahinyan/rss',
+        #'https://nitter.privacydev.net/search/rss?f=tweets&q=%22mate+in+2%22',
         'https://nitter.poast.org/ImShahinyan/rss',
-        # 'https://nitter.poast.org/search/rss?f=tweets&q=%22mate+in+2%22'
+        'https://nitter.poast.org/search/rss?f=tweets&q=%22mate+in+2%22'
     ]
     entries = []
     for url in urls:
@@ -41,10 +41,10 @@ def get_mate_in_2_posts():
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
             },
         )
-        if response['status'] == 200:
+        if 'status' in response and response['status'] == 200:
             entries = entries + response.entries
         else:
-            print(f"bad http response {response['status']} from {url}")
+            print(f"bad http response {response} from {url}")
         time.sleep(1)
     return list({v['id'].split('/')[-1]: v for v in entries}.values())
 
