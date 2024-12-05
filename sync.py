@@ -8,6 +8,7 @@ from datetime import timezone
 
 import chitose
 import requests
+import urllib.error
 import yaml
 from chitose.app.bsky.feed.post import Post
 
@@ -180,11 +181,14 @@ def main():
                         'list': list_uri,
                         'createdAt': datetime.now(timezone.utc).isoformat(),
                     }
-                    agent.com.atproto.repo.create_record(
-                        repo=actor_did,
-                        collection='app.bsky.graph.listitem',
-                        record=record
-                    )
+                    try:
+                        agent.com.atproto.repo.create_record(
+                            repo=actor_did,
+                            collection='app.bsky.graph.listitem',
+                            record=record
+                        )
+                    except urllib.error.HTTPError as err:
+                        print(f">>>> HTTPError - Unable to add {member}: {err.msg}")
         time.sleep(.1)
 
     if len(map_handle_did) > 0:
