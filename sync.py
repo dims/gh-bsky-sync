@@ -89,7 +89,7 @@ def get_bluesky_account(agent, username):
         accounts = response.json()
         for account in accounts:
             if account['provider'] == 'bluesky':
-                actor = account['url'].split('/')[-1]
+                actor = account['url'].rstrip('/').split('/')[-1]
                 response = parse_json_from_bytes(agent.app.bsky.actor.get_profiles(actors=actor))
                 for profile in response["profiles"]:
                     return profile["handle"], profile["did"]
